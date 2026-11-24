@@ -1,0 +1,18 @@
+# Global Code Owners for Emblemix
+* @PathakPratik05
+
+# Backend & Data Engineering
+/backend/ @PathakPratik05
+/backend/src/main/java/com/emblemix/analytics/ @PathakPratik05
+/backend/src/main/java/com/emblemix/monitoring/salesforce/ @PathakPratik05
+
+# Frontend & Next.js Workspaces
+/frontend/ @PathakPratik05
+/frontend/src/app/(dashboard)/workspaces/ @PathakPratik05
+/frontend/src/app/(dashboard)/teams/ @PathakPratik05
+
+# Infrastructure & CI/CD
+/.github/ @PathakPratik05
+/docker-compose.yml @PathakPratik05
+/backend/Dockerfile @PathakPratik05
+/frontend/Dockerfile @PathakPratik05

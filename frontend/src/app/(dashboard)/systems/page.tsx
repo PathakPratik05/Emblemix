@@ -14,14 +14,28 @@ export default function SystemsPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
-  const [systemType, setSystemType] = useState<'WEBSITE' | 'SALESFORCE' | 'WEBHOOK'>('WEBSITE');
+  const [systemType, setSystemType] = useState<'WEBSITE' | 'SALESFORCE' | 'WEBHOOK' | 'API' | 'INFRASTRUCTURE'>('WEBSITE');
   const [description, setDescription] = useState('');
   const [environment, setEnvironment] = useState('PRODUCTION');
+  const [owningTeamId, setOwningTeamId] = useState('');
+  const [primaryOwnerId, setPrimaryOwnerId] = useState('');
+  const [criticality, setCriticality] = useState('MEDIUM');
+  const [escalationPolicy, setEscalationPolicy] = useState('P2-30M');
   const [error, setError] = useState<string | null>(null);
 
   const { data: systemsResponse, isLoading } = useQuery({
     queryKey: ['connected-systems'],
     queryFn: () => api.systems.getAll(),
+  });
+
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn: () => api.teams.getAll(),
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['org-users'],
+    queryFn: () => api.organization.getUsers(),
   });
 
   const createMutation = useMutation({
@@ -50,13 +64,26 @@ export default function SystemsPage() {
     setDescription('');
     setSystemType('WEBSITE');
     setEnvironment('PRODUCTION');
+    setOwningTeamId('');
+    setPrimaryOwnerId('');
+    setCriticality('MEDIUM');
+    setEscalationPolicy('P2-30M');
     setError(null);
   };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    createMutation.mutate({ name, systemType, description, environment });
+    createMutation.mutate({
+      name,
+      systemType,
+      description,
+      environment,
+      owningTeamId: owningTeamId || undefined,
+      primaryOwnerId: primaryOwnerId || undefined,
+      criticality,
+      escalationPolicy,
+    } as any);
   };
 
   const getStatusBadge = (status: ConnectedSystem['status']) => {
@@ -111,16 +138,17 @@ export default function SystemsPage() {
                 <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold text-xs uppercase tracking-wider">
                   <th className="py-3 px-6">System Name</th>
                   <th className="py-3 px-6">Type</th>
+                  <th className="py-3 px-6">Owning Team & Lead</th>
+                  <th className="py-3 px-6">Criticality</th>
                   <th className="py-3 px-6">Environment</th>
                   <th className="py-3 px-6">Status</th>
-                  <th className="py-3 px-6">Last Monitored</th>
                   <th className="py-3 px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-10 text-slate-400">
+                    <td colSpan={7} className="text-center py-10 text-slate-400">
                       Loading connected systems...
                     </td>
                   </tr>
@@ -150,10 +178,29 @@ export default function SystemsPage() {
                           ) : (
                             <>
                               <Webhook className="w-4 h-4 text-purple-600" />
-                              <span>Webhook</span>
+                              <span>{sys.systemType}</span>
                             </>
                           )}
                         </div>
+                      </td>
+                      <td className="py-4 px-6 text-xs">
+                        <div className="font-semibold text-slate-800">{sys.owningTeamName || 'Unassigned Team'}</div>
+                        {sys.primaryOwnerName && (
+                          <div className="text-[11px] text-slate-400">Lead: {sys.primaryOwnerName}</div>
+                        )}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                            sys.criticality === 'CRITICAL'
+                              ? 'bg-red-50 text-red-700 border-red-200'
+                              : sys.criticality === 'HIGH'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-slate-50 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {sys.criticality || 'MEDIUM'}
+                        </span>
                       </td>
                       <td className="py-4 px-6">
                         <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
@@ -161,9 +208,6 @@ export default function SystemsPage() {
                         </span>
                       </td>
                       <td className="py-4 px-6">{getStatusBadge(sys.status)}</td>
-                      <td className="py-4 px-6 text-xs text-slate-500">
-                        {sys.lastMonitoredAt ? new Date(sys.lastMonitoredAt).toLocaleString() : 'Not yet checked'}
-                      </td>
                       <td className="py-4 px-6 text-right">
                         <Button
                           variant="ghost"
@@ -182,7 +226,7 @@ export default function SystemsPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center py-12 text-slate-400">
+                    <td colSpan={7} className="text-center py-12 text-slate-400">
                       No connected systems registered yet. Click "Register System" to get started.
                     </td>
                   </tr>
@@ -201,7 +245,7 @@ export default function SystemsPage() {
           resetForm();
         }}
         title="Register Connected System"
-        description="Add a new target system to track health and trigger alerts"
+        description="Add a new target system with team ownership, SLA, and criticality"
       >
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
@@ -217,30 +261,91 @@ export default function SystemsPage() {
             required
           />
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">System Type</label>
-            <select
-              value={systemType}
-              onChange={(e) => setSystemType(e.target.value as any)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="WEBSITE">Website (HTTP / HTTPS)</option>
-              <option value="SALESFORCE">Salesforce Organization</option>
-              <option value="WEBHOOK">Custom Webhook Inbound</option>
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">System Type</label>
+              <select
+                value={systemType}
+                onChange={(e) => setSystemType(e.target.value as any)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="WEBSITE">Website (HTTP / HTTPS)</option>
+                <option value="SALESFORCE">Salesforce Organization</option>
+                <option value="WEBHOOK">Custom Inbound Webhook</option>
+                <option value="API">Application REST API</option>
+                <option value="INFRASTRUCTURE">Cloud / Infrastructure / K8s</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Environment</label>
+              <select
+                value={environment}
+                onChange={(e) => setEnvironment(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="PRODUCTION">Production</option>
+                <option value="STAGING">Staging</option>
+                <option value="DEVELOPMENT">Development</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Environment</label>
-            <select
-              value={environment}
-              onChange={(e) => setEnvironment(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="PRODUCTION">Production</option>
-              <option value="STAGING">Staging</option>
-              <option value="DEVELOPMENT">Development</option>
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Owning Team</label>
+              <select
+                value={owningTeamId}
+                onChange={(e) => setOwningTeamId(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Select Team --</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({t.teamType})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Primary Owner</label>
+              <select
+                value={primaryOwnerId}
+                onChange={(e) => setPrimaryOwnerId(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Select Owner --</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.firstName} {u.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Business Criticality</label>
+              <select
+                value={criticality}
+                onChange={(e) => setCriticality(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="CRITICAL">Critical (P1 - 15m SLA)</option>
+                <option value="HIGH">High (P2 - 30m SLA)</option>
+                <option value="MEDIUM">Medium (P3 - 60m SLA)</option>
+                <option value="LOW">Low (P4 - 4h SLA)</option>
+              </select>
+            </div>
+
+            <Input
+              label="Escalation Policy"
+              placeholder="e.g. P1-IMMEDIATE-15M"
+              value={escalationPolicy}
+              onChange={(e) => setEscalationPolicy(e.target.value)}
+            />
           </div>
 
           <Input

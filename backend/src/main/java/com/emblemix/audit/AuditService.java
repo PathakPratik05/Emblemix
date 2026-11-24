@@ -31,4 +31,10 @@ public class AuditService {
                 page.isLast()
         );
     }
+
+    @Transactional
+    public void log(com.emblemix.organization.Organization org, com.emblemix.user.User user, String action, String entityType, String entityId, String detailsJson) {
+        AuditLog auditLog = new AuditLog(null, org, user, action, entityType, entityId, detailsJson, null);
+        auditLogRepository.save(auditLog);
+    }
 }

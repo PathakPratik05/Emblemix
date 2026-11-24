@@ -20,6 +20,10 @@ public interface IncidentRepository extends JpaRepository<Incident, UUID> {
     Page<Incident> findByOrganizationIdAndStatus(UUID organizationId, IncidentStatus status, Pageable pageable);
     Page<Incident> findByOrganizationIdAndSystemId(UUID organizationId, UUID systemId, Pageable pageable);
     Page<Incident> findByOrganizationIdAndSeverity(UUID organizationId, IncidentSeverity severity, Pageable pageable);
+    Page<Incident> findByOrganizationIdAndAssignedTeamId(UUID organizationId, UUID assignedTeamId, Pageable pageable);
+    List<Incident> findByOrganizationIdAndAssignedTeamId(UUID organizationId, UUID assignedTeamId);
+    List<Incident> findByOrganizationId(UUID organizationId);
+    List<Incident> findByOrganizationIdAndCreatedAtBetween(UUID organizationId, Instant from, Instant to);
 
     Optional<Incident> findFirstByOrganizationIdAndFingerprintAndStatusIn(
             UUID organizationId,
@@ -36,6 +40,8 @@ public interface IncidentRepository extends JpaRepository<Incident, UUID> {
     long countByOrganizationId(UUID organizationId);
     long countByOrganizationIdAndStatus(UUID organizationId, IncidentStatus status);
     long countByOrganizationIdAndSeverity(UUID organizationId, IncidentSeverity severity);
+    long countByOrganizationIdAndAssignedTeamId(UUID organizationId, UUID assignedTeamId);
+    long countByOrganizationIdAndAssignedTeamIdAndStatus(UUID organizationId, UUID assignedTeamId, IncidentStatus status);
     long countByOrganizationIdAndResolvedAtAfter(UUID organizationId, Instant after);
 
     @Query("SELECT i FROM Incident i WHERE i.organization.id = :orgId AND i.resolvedAt IS NOT NULL AND i.resolvedAt >= :since")

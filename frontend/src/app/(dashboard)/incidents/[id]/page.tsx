@@ -13,6 +13,8 @@ import {
   Send,
   MessageSquare,
   History,
+  Users,
+  ShieldAlert,
 } from 'lucide-react';
 import { api } from '../../../../lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../../components/ui/Card';
@@ -26,8 +28,10 @@ export default function IncidentDetailPage() {
   const queryClient = useQueryClient();
 
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isAssignTeamModalOpen, setIsAssignTeamModalOpen] = useState(false);
   const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedTeamId, setSelectedTeamId] = useState('');
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [commentText, setCommentText] = useState('');
 
@@ -43,6 +47,11 @@ export default function IncidentDetailPage() {
     queryFn: api.organization.getUsers,
   });
 
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn: api.teams.getAll,
+  });
+
   const acknowledgeMutation = useMutation({
     mutationFn: () => (id ? api.incidents.acknowledge(id) : Promise.reject()),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['incident-detail', id] }),
@@ -54,6 +63,19 @@ export default function IncidentDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['incident-detail', id] }),
       setIsAssignModalOpen(false);
     },
+  });
+
+  const assignTeamMutation = useMutation({
+    mutationFn: (teamId: string) => (id ? api.incidents.assignTeam(id, teamId) : Promise.reject()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incident-detail', id] }),
+      setIsAssignTeamModalOpen(false);
+    },
+  });
+
+  const escalateMutation = useMutation({
+    mutationFn: (reason?: string) => (id ? api.incidents.escalate(id, reason) : Promise.reject()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['incident-detail', id] }),
   });
 
   const resolveMutation = useMutation({
@@ -111,7 +133,7 @@ export default function IncidentDetailPage() {
             </p>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             {incident.status === 'OPEN' && (
               <Button
                 variant="outline"
@@ -127,11 +149,34 @@ export default function IncidentDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => setIsAssignTeamModalOpen(true)}
+                  className="space-x-1"
+                >
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span>{incident.assignedTeamName ? 'Reassign Team' : 'Assign Team'}</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setIsAssignModalOpen(true)}
                   className="space-x-1"
                 >
                   <UserCheck className="w-4 h-4" />
-                  <span>{incident.assignedUserId ? 'Reassign' : 'Assign'}</span>
+                  <span>{incident.assignedUserId ? 'Reassign Engineer' : 'Assign Engineer'}</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (confirm('Are you sure you want to escalate this incident to the next tier?')) {
+                      escalateMutation.mutate('Manual escalation by incident responder');
+                    }
+                  }}
+                  isLoading={escalateMutation.isPending}
+                  className="border-red-200 text-red-600 hover:bg-red-50 space-x-1"
+                >
+                  <ShieldAlert className="w-4 h-4 text-red-600" />
+                  <span>Escalate</span>
                 </Button>
                 <Button
                   variant="default"
@@ -149,7 +194,7 @@ export default function IncidentDetailPage() {
       </div>
 
       {/* Incident Details Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card className="p-4">
           <span className="text-xs text-slate-500 block">Current Status</span>
           <span
@@ -167,10 +212,30 @@ export default function IncidentDetailPage() {
           </span>
         </Card>
         <Card className="p-4">
+          <span className="text-xs text-slate-500 block">Assigned Team</span>
+          <span className="text-sm font-semibold text-slate-900 mt-1 block truncate">
+            {incident.assignedTeamName || 'Unassigned'}
+          </span>
+        </Card>
+        <Card className="p-4">
           <span className="text-xs text-slate-500 block">Assigned Engineer</span>
-          <span className="text-sm font-semibold text-slate-900 mt-1 block">
+          <span className="text-sm font-semibold text-slate-900 mt-1 block truncate">
             {incident.assignedUserName || 'Unassigned'}
           </span>
+        </Card>
+        <Card className="p-4">
+          <span className="text-xs text-slate-500 block">Escalation Tier</span>
+          <div className="flex items-center space-x-1 mt-1">
+            <span
+              className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                (incident.escalationLevel ?? 1) > 1
+                  ? 'bg-orange-100 text-orange-800'
+                  : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              Tier {incident.escalationLevel ?? 1}
+            </span>
+          </div>
         </Card>
         <Card className="p-4">
           <span className="text-xs text-slate-500 block">Acknowledged At</span>
@@ -277,6 +342,44 @@ export default function IncidentDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Assign Team Modal */}
+      <Modal
+        isOpen={isAssignTeamModalOpen}
+        onClose={() => setIsAssignTeamModalOpen(false)}
+        title="Assign Incident to Team"
+        description="Select an engineering team to own and resolve this incident"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Select Owning Team</label>
+            <select
+              value={selectedTeamId}
+              onChange={(e) => setSelectedTeamId(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- Choose Engineering Team --</option>
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({t.teamType})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setIsAssignTeamModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!selectedTeamId}
+              onClick={() => assignTeamMutation.mutate(selectedTeamId)}
+              isLoading={assignTeamMutation.isPending}
+            >
+              Confirm Team Assignment
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Assign Modal */}
       <Modal

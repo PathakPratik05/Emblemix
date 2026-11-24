@@ -7,6 +7,9 @@ import com.emblemix.common.security.SecurityUtils;
 import com.emblemix.event.Event;
 import com.emblemix.incident.dto.*;
 import com.emblemix.notification.NotificationService;
+import com.emblemix.system.ConnectedSystem;
+import com.emblemix.team.Team;
+import com.emblemix.team.TeamRepository;
 import com.emblemix.user.User;
 import com.emblemix.user.UserRepository;
 import org.slf4j.Logger;
@@ -39,6 +42,7 @@ public class IncidentService {
     private final IncidentHistoryRepository historyRepository;
     private final IncidentCommentRepository commentRepository;
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
     private final NotificationService notificationService;
 
     public IncidentService(IncidentRepository incidentRepository,
@@ -46,12 +50,14 @@ public class IncidentService {
                            IncidentHistoryRepository historyRepository,
                            IncidentCommentRepository commentRepository,
                            UserRepository userRepository,
+                           TeamRepository teamRepository,
                            NotificationService notificationService) {
         this.incidentRepository = incidentRepository;
         this.incidentEventRepository = incidentEventRepository;
         this.historyRepository = historyRepository;
         this.commentRepository = commentRepository;
         this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
         this.notificationService = notificationService;
     }
 
@@ -106,6 +112,18 @@ public class IncidentService {
                 event,
                 event.getFingerprint()
         );
+
+        // Intelligent routing based on connected system ownership
+        ConnectedSystem system = event.getSystem();
+        if (system != null) {
+            if (system.getOwningTeam() != null) {
+                newIncident.setAssignedTeam(system.getOwningTeam());
+            }
+            if (system.getPrimaryOwner() != null) {
+                newIncident.setAssignedUser(system.getPrimaryOwner());
+            }
+        }
+
         Incident savedIncident = incidentRepository.save(newIncident);
 
         incidentEventRepository.save(new IncidentEvent(null, savedIncident, event));
@@ -119,6 +137,30 @@ public class IncidentService {
                 IncidentStatus.OPEN.name(),
                 "Incident automatically detected and created from source event: " + event.getEventType()
         ));
+
+        if (savedIncident.getAssignedTeam() != null) {
+            historyRepository.save(new IncidentHistory(
+                    null,
+                    savedIncident,
+                    null,
+                    "ROUTED_TO_TEAM",
+                    null,
+                    savedIncident.getAssignedTeam().getName(),
+                    "Automatically routed to owning team '" + savedIncident.getAssignedTeam().getName() + "' based on system configuration"
+            ));
+        }
+
+        if (savedIncident.getAssignedUser() != null) {
+            historyRepository.save(new IncidentHistory(
+                    null,
+                    savedIncident,
+                    null,
+                    "ROUTED_TO_OWNER",
+                    null,
+                    savedIncident.getAssignedUser().getFirstName() + " " + savedIncident.getAssignedUser().getLastName(),
+                    "Assigned to primary system owner " + savedIncident.getAssignedUser().getEmail()
+            ));
+        }
 
         // Dispatch notifications
         notificationService.dispatchIncidentNotifications(savedIncident, "CREATED");
@@ -156,9 +198,16 @@ public class IncidentService {
 
     @Transactional(readOnly = true)
     public PagedResponse<IncidentResponse> getIncidents(IncidentStatus status, IncidentSeverity severity, Pageable pageable) {
+        return getIncidents(status, severity, null, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<IncidentResponse> getIncidents(IncidentStatus status, IncidentSeverity severity, UUID teamId, Pageable pageable) {
         UUID orgId = SecurityUtils.getRequiredCurrentOrgId();
         Page<Incident> page;
-        if (status != null) {
+        if (teamId != null) {
+            page = incidentRepository.findByOrganizationIdAndAssignedTeamId(orgId, teamId, pageable);
+        } else if (status != null) {
             page = incidentRepository.findByOrganizationIdAndStatus(orgId, status, pageable);
         } else if (severity != null) {
             page = incidentRepository.findByOrganizationIdAndSeverity(orgId, severity, pageable);
@@ -263,6 +312,85 @@ public class IncidentService {
                 "Assigned to " + assignee.getFirstName() + " " + assignee.getLastName()
         ));
 
+        return IncidentResponse.from(saved);
+    }
+
+    @Transactional
+    public IncidentResponse assignTeam(UUID id, UUID teamId) {
+        UUID orgId = SecurityUtils.getRequiredCurrentOrgId();
+        Incident incident = incidentRepository.findByIdAndOrganizationId(id, orgId)
+                .orElseThrow(() -> new ResourceNotFoundException("Incident", "id", id));
+
+        Team team = teamRepository.findByIdAndOrganizationId(teamId, orgId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", "id", teamId));
+
+        User currentUser = null;
+        var principalOpt = SecurityUtils.getCurrentUserPrincipal();
+        if (principalOpt.isPresent()) {
+            currentUser = userRepository.findById(principalOpt.get().getId()).orElse(null);
+        }
+
+        String prevTeamName = incident.getAssignedTeam() != null ? incident.getAssignedTeam().getName() : "None";
+        incident.setAssignedTeam(team);
+        Incident saved = incidentRepository.save(incident);
+
+        historyRepository.save(new IncidentHistory(
+                null,
+                saved,
+                currentUser,
+                "TEAM_ASSIGNED",
+                prevTeamName,
+                team.getName(),
+                "Reassigned to team " + team.getName()
+        ));
+
+        notificationService.dispatchIncidentNotifications(saved, "TEAM_ASSIGNED");
+        return IncidentResponse.from(saved);
+    }
+
+    @Transactional
+    public IncidentResponse escalateIncident(UUID id, String reason) {
+        UUID orgId = SecurityUtils.getRequiredCurrentOrgId();
+        Incident incident = incidentRepository.findByIdAndOrganizationId(id, orgId)
+                .orElseThrow(() -> new ResourceNotFoundException("Incident", "id", id));
+
+        if (incident.getStatus() == IncidentStatus.RESOLVED || incident.getStatus() == IncidentStatus.CLOSED) {
+            throw new BadRequestException("Cannot escalate an already resolved or closed incident");
+        }
+
+        User currentUser = null;
+        var principalOpt = SecurityUtils.getCurrentUserPrincipal();
+        if (principalOpt.isPresent()) {
+            currentUser = userRepository.findById(principalOpt.get().getId()).orElse(null);
+        }
+
+        int prevLevel = incident.getEscalationLevel();
+        incident.setEscalationLevel(prevLevel + 1);
+        incident.setEscalatedAt(Instant.now());
+
+        IncidentSeverity oldSeverity = incident.getSeverity();
+        if (oldSeverity == IncidentSeverity.LOW) {
+            incident.setSeverity(IncidentSeverity.MEDIUM);
+        } else if (oldSeverity == IncidentSeverity.MEDIUM) {
+            incident.setSeverity(IncidentSeverity.HIGH);
+        } else if (oldSeverity == IncidentSeverity.HIGH) {
+            incident.setSeverity(IncidentSeverity.CRITICAL);
+        }
+
+        Incident saved = incidentRepository.save(incident);
+
+        historyRepository.save(new IncidentHistory(
+                null,
+                saved,
+                currentUser,
+                "ESCALATED",
+                "Level " + prevLevel,
+                "Level " + saved.getEscalationLevel(),
+                "Escalated (Severity: " + oldSeverity + " -> " + saved.getSeverity() + "). Reason: " +
+                        (reason != null && !reason.isBlank() ? reason.trim() : "Manual escalation policy triggered")
+        ));
+
+        notificationService.dispatchIncidentNotifications(saved, "ESCALATED");
         return IncidentResponse.from(saved);
     }
 

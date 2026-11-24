@@ -8,6 +8,10 @@ import com.emblemix.organization.Organization;
 import com.emblemix.organization.OrganizationRepository;
 import com.emblemix.system.dto.ConnectedSystemRequest;
 import com.emblemix.system.dto.ConnectedSystemResponse;
+import com.emblemix.team.Team;
+import com.emblemix.team.TeamRepository;
+import com.emblemix.user.User;
+import com.emblemix.user.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,11 +25,17 @@ public class ConnectedSystemService {
 
     private final ConnectedSystemRepository systemRepository;
     private final OrganizationRepository organizationRepository;
+    private final TeamRepository teamRepository;
+    private final UserRepository userRepository;
 
     public ConnectedSystemService(ConnectedSystemRepository systemRepository,
-                                  OrganizationRepository organizationRepository) {
+                                  OrganizationRepository organizationRepository,
+                                  TeamRepository teamRepository,
+                                  UserRepository userRepository) {
         this.systemRepository = systemRepository;
         this.organizationRepository = organizationRepository;
+        this.teamRepository = teamRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -49,6 +59,33 @@ public class ConnectedSystemService {
         );
         if (request.enabled() != null) {
             system.setEnabled(request.enabled());
+        }
+        if (request.criticality() != null) {
+            system.setCriticality(request.criticality());
+        }
+        if (request.escalationPolicy() != null) {
+            system.setEscalationPolicy(request.escalationPolicy());
+        }
+        if (request.owningTeamId() != null) {
+            Team team = teamRepository.findByIdAndOrganizationId(request.owningTeamId(), orgId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Team", "id", request.owningTeamId()));
+            system.setOwningTeam(team);
+        }
+        if (request.primaryOwnerId() != null) {
+            User primary = userRepository.findById(request.primaryOwnerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.primaryOwnerId()));
+            if (!primary.getOrganization().getId().equals(orgId)) {
+                throw new BadRequestException("Primary owner must belong to your organization");
+            }
+            system.setPrimaryOwner(primary);
+        }
+        if (request.backupOwnerId() != null) {
+            User backup = userRepository.findById(request.backupOwnerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.backupOwnerId()));
+            if (!backup.getOrganization().getId().equals(orgId)) {
+                throw new BadRequestException("Backup owner must belong to your organization");
+            }
+            system.setBackupOwner(backup);
         }
 
         return ConnectedSystemResponse.from(systemRepository.save(system));
@@ -95,6 +132,39 @@ public class ConnectedSystemService {
         }
         if (request.enabled() != null) {
             system.setEnabled(request.enabled());
+        }
+        if (request.criticality() != null) {
+            system.setCriticality(request.criticality());
+        }
+        if (request.escalationPolicy() != null) {
+            system.setEscalationPolicy(request.escalationPolicy());
+        }
+        if (request.owningTeamId() != null) {
+            Team team = teamRepository.findByIdAndOrganizationId(request.owningTeamId(), orgId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Team", "id", request.owningTeamId()));
+            system.setOwningTeam(team);
+        } else {
+            system.setOwningTeam(null);
+        }
+        if (request.primaryOwnerId() != null) {
+            User primary = userRepository.findById(request.primaryOwnerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.primaryOwnerId()));
+            if (!primary.getOrganization().getId().equals(orgId)) {
+                throw new BadRequestException("Primary owner must belong to your organization");
+            }
+            system.setPrimaryOwner(primary);
+        } else {
+            system.setPrimaryOwner(null);
+        }
+        if (request.backupOwnerId() != null) {
+            User backup = userRepository.findById(request.backupOwnerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.backupOwnerId()));
+            if (!backup.getOrganization().getId().equals(orgId)) {
+                throw new BadRequestException("Backup owner must belong to your organization");
+            }
+            system.setBackupOwner(backup);
+        } else {
+            system.setBackupOwner(null);
         }
 
         return ConnectedSystemResponse.from(systemRepository.save(system));

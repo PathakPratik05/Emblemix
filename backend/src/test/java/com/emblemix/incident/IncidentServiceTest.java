@@ -8,6 +8,7 @@ import com.emblemix.notification.NotificationService;
 import com.emblemix.organization.Organization;
 import com.emblemix.system.ConnectedSystem;
 import com.emblemix.system.SystemType;
+import com.emblemix.team.TeamRepository;
 import com.emblemix.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +44,9 @@ class IncidentServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private TeamRepository teamRepository;
+
+    @Mock
     private NotificationService notificationService;
 
     private IncidentService incidentService;
@@ -58,6 +62,7 @@ class IncidentServiceTest {
                 historyRepository,
                 commentRepository,
                 userRepository,
+                teamRepository,
                 notificationService
         );
         org = new Organization(UUID.randomUUID(), "Acme", "acme");
@@ -131,5 +136,63 @@ class IncidentServiceTest {
         assertNotNull(existing.getResolvedAt());
         verify(incidentRepository).save(existing);
         verify(notificationService).dispatchIncidentNotifications(existing, "RESOLVED");
+    }
+
+    @Test
+    @DisplayName("Should automatically route new incident to system's owning team and primary owner")
+    void testIntelligentRoutingToTeamAndOwner() {
+        com.emblemix.team.Team devopsTeam = new com.emblemix.team.Team(
+                UUID.randomUUID(), org, "DevOps Team", com.emblemix.team.TeamType.DEVOPS, "Infra", null
+        );
+        com.emblemix.user.User owner = new com.emblemix.user.User(
+                UUID.randomUUID(), org, "owner@acme.com", "hash", "Bob", "Owner", com.emblemix.user.Role.ENGINEER
+        );
+        system.setOwningTeam(devopsTeam);
+        system.setPrimaryOwner(owner);
+
+        Event event = new Event(
+                UUID.randomUUID(), org, system, EventSourceType.WEBSITE,
+                EventType.WEBSITE_DOWN, EventSeverity.CRITICAL, "Server Down", null, "fp-route-test", null
+        );
+
+        when(incidentRepository.findFirstByOrganizationIdAndFingerprintAndStatusIn(any(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(incidentRepository.save(any(Incident.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Incident created = incidentService.createOrGroupIncident(event, IncidentSeverity.CRITICAL);
+
+        assertNotNull(created);
+        assertNotNull(created.getAssignedTeam());
+        assertEquals("DevOps Team", created.getAssignedTeam().getName());
+        assertNotNull(created.getAssignedUser());
+        assertEquals("owner@acme.com", created.getAssignedUser().getEmail());
+        verify(historyRepository, atLeast(2)).save(any(IncidentHistory.class));
+    }
+
+    @Test
+    @DisplayName("Should escalate incident and elevate severity")
+    void testEscalateIncident() {
+        UUID incidentId = UUID.randomUUID();
+        Incident incident = new Incident(
+                incidentId, org, system, "High Latency", "Desc",
+                IncidentSeverity.MEDIUM, null, "fp-escalate"
+        );
+        incident.setStatus(IncidentStatus.OPEN);
+
+        com.emblemix.common.security.TenantContext.setCurrentTenant(org.getId());
+        try {
+            when(incidentRepository.findByIdAndOrganizationId(incidentId, org.getId()))
+                    .thenReturn(Optional.of(incident));
+            when(incidentRepository.save(any(Incident.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            var response = incidentService.escalateIncident(incidentId, "SLA approaching breach");
+
+            assertEquals(1, response.escalationLevel());
+            assertEquals(IncidentSeverity.HIGH, response.severity());
+            assertNotNull(response.escalatedAt());
+            verify(notificationService).dispatchIncidentNotifications(any(Incident.class), eq("ESCALATED"));
+        } finally {
+            com.emblemix.common.security.TenantContext.clear();
+        }
     }
 }

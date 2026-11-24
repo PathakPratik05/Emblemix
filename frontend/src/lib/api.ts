@@ -38,11 +38,19 @@ export interface ConnectedSystem {
   id: string;
   organizationId: string;
   name: string;
-  systemType: 'WEBSITE' | 'SALESFORCE' | 'WEBHOOK';
+  systemType: 'WEBSITE' | 'SALESFORCE' | 'WEBHOOK' | 'API' | 'INFRASTRUCTURE';
   description?: string;
   environment: string;
   status: 'HEALTHY' | 'DEGRADED' | 'DOWN' | 'UNKNOWN';
   enabled: boolean;
+  owningTeamId?: string;
+  owningTeamName?: string;
+  primaryOwnerId?: string;
+  primaryOwnerName?: string;
+  backupOwnerId?: string;
+  backupOwnerName?: string;
+  criticality?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  escalationPolicy?: string;
   lastMonitoredAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -114,13 +122,101 @@ export interface Incident {
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   status: 'OPEN' | 'ACKNOWLEDGED' | 'INVESTIGATING' | 'RESOLVED' | 'CLOSED';
   fingerprint: string;
+  assignedTeamId?: string;
+  assignedTeamName?: string;
   assignedUserId?: string;
   assignedUserName?: string;
+  escalationLevel?: number;
+  escalatedAt?: string;
   resolutionNotes?: string;
   acknowledgedAt?: string;
   resolvedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export type TeamType =
+  | 'DEVOPS'
+  | 'SALESFORCE'
+  | 'WEB_ENGINEERING'
+  | 'DATA_ANALYTICS'
+  | 'APPLICATION_ENGINEERING'
+  | 'SECURITY'
+  | 'SUPPORT';
+
+export interface TeamMember {
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: 'LEAD' | 'MEMBER';
+  joinedAt: string;
+}
+
+export interface Team {
+  id: string;
+  organizationId: string;
+  name: string;
+  teamType: TeamType;
+  description?: string;
+  leadId?: string;
+  leadName?: string;
+  members: TeamMember[];
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KpiSummary {
+  uptimePercentage: number;
+  availabilityPercentage: number;
+  mttaMinutes: number;
+  mttrMinutes: number;
+  totalIncidents: number;
+  criticalIncidents: number;
+  resolvedIncidents: number;
+  openIncidents: number;
+  incidentRecurrenceCount: number;
+  slaAchievementPercentage: number;
+  totalSystems: number;
+  healthySystems: number;
+  systemHealthPercentage: number;
+  integrationHealthPercentage: number;
+  calculatedAt: string;
+}
+
+export interface TeamPerformance {
+  teamId: string;
+  teamName: string;
+  teamType: TeamType;
+  assignedIncidents: number;
+  resolvedIncidents: number;
+  openIncidents: number;
+  mttaMinutes: number;
+  mttrMinutes: number;
+  resolutionRatePercentage: number;
+  slaCompliancePercentage: number;
+}
+
+export interface PowerBiReportCatalogItem {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  workspaceName: string;
+  datasetRefreshStatus: string;
+  lastRefreshedAt: string;
+}
+
+export interface PowerBiEmbedConfig {
+  reportId: string;
+  reportName: string;
+  embedUrl: string;
+  embedToken: string;
+  tokenExpiration: string;
+  workspaceId: string;
+  entraTenantId: string;
+  organizationId: string;
 }
 
 export interface IncidentTimeline {
@@ -407,6 +503,16 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ userId }),
       }),
+    assignTeam: (id: string, teamId: string) =>
+      request<Incident>(`/incidents/${id}/assign-team`, {
+        method: 'POST',
+        body: JSON.stringify({ teamId }),
+      }),
+    escalate: (id: string, reason?: string) =>
+      request<Incident>(`/incidents/${id}/escalate`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
     resolve: (id: string, resolutionNotes: string) =>
       request<Incident>(`/incidents/${id}/resolve`, {
         method: 'POST',
@@ -417,6 +523,55 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ comment }),
       }),
+  },
+
+  teams: {
+    getAll: () => request<Team[]>('/teams'),
+    getById: (id: string) => request<Team>(`/teams/${id}`),
+    getMyTeams: () => request<Team[]>('/teams/my-teams'),
+    create: (payload: { name: string; teamType: TeamType; description?: string; leadId?: string }) =>
+      request<Team>('/teams', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    update: (id: string, payload: { name: string; teamType: TeamType; description?: string; leadId?: string }) =>
+      request<Team>(`/teams/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: string) =>
+      request<void>(`/teams/${id}`, {
+        method: 'DELETE',
+      }),
+    addMember: (teamId: string, payload: { userId: string; role?: 'LEAD' | 'MEMBER' }) =>
+      request<Team>(`/teams/${teamId}/members`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    removeMember: (teamId: string, userId: string) =>
+      request<Team>(`/teams/${teamId}/members/${userId}`, {
+        method: 'DELETE',
+      }),
+  },
+
+  analytics: {
+    getKpis: () => request<KpiSummary>('/analytics/kpis'),
+    getTeamPerformance: () => request<TeamPerformance[]>('/analytics/teams/performance'),
+    getGovernedIncidents: (params?: { from?: string; to?: string; systemId?: string; teamId?: string }) => {
+      const q = new URLSearchParams();
+      if (params?.from) q.set('from', params.from);
+      if (params?.to) q.set('to', params.to);
+      if (params?.systemId) q.set('systemId', params.systemId);
+      if (params?.teamId) q.set('teamId', params.teamId);
+      return request<any[]>(`/analytics/governed/incidents?${q.toString()}`);
+    },
+    getGovernedMonitoring: (systemId?: string) => {
+      const q = systemId ? `?systemId=${systemId}` : '';
+      return request<any[]>(`/analytics/governed/monitoring${q}`);
+    },
+    getPowerBiCatalog: () => request<PowerBiReportCatalogItem[]>('/analytics/powerbi/catalog'),
+    getPowerBiEmbedConfig: (reportId: string) =>
+      request<PowerBiEmbedConfig>(`/analytics/powerbi/embed-config/${reportId}`),
   },
 
   alertRules: {

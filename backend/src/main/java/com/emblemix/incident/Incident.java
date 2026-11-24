@@ -3,6 +3,7 @@ package com.emblemix.incident;
 import com.emblemix.event.Event;
 import com.emblemix.organization.Organization;
 import com.emblemix.system.ConnectedSystem;
+import com.emblemix.team.Team;
 import com.emblemix.user.User;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -45,8 +46,18 @@ public class Incident {
     private String fingerprint;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_team_id")
+    private Team assignedTeam;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_user_id")
     private User assignedUser;
+
+    @Column(name = "escalated_at")
+    private Instant escalatedAt;
+
+    @Column(name = "escalation_level", nullable = false)
+    private int escalationLevel = 0;
 
     @Column(name = "resolution_notes", columnDefinition = "TEXT")
     private String resolutionNotes;
@@ -206,6 +217,30 @@ public class Incident {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Team getAssignedTeam() {
+        return assignedTeam;
+    }
+
+    public void setAssignedTeam(Team assignedTeam) {
+        this.assignedTeam = assignedTeam;
+    }
+
+    public Instant getEscalatedAt() {
+        return escalatedAt;
+    }
+
+    public void setEscalatedAt(Instant escalatedAt) {
+        this.escalatedAt = escalatedAt;
+    }
+
+    public int getEscalationLevel() {
+        return escalationLevel;
+    }
+
+    public void setEscalationLevel(int escalationLevel) {
+        this.escalationLevel = escalationLevel;
     }
 
     public Instant getUpdatedAt() {

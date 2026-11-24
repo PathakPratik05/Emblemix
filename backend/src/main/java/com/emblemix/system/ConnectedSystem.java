@@ -1,6 +1,8 @@
 package com.emblemix.system;
 
 import com.emblemix.organization.Organization;
+import com.emblemix.team.Team;
+import com.emblemix.user.User;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
@@ -28,6 +30,24 @@ public class ConnectedSystem {
 
     @Column(nullable = false)
     private String environment = "PRODUCTION";
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owning_team_id")
+    private Team owningTeam;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "primary_owner_id")
+    private User primaryOwner;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "backup_owner_id")
+    private User backupOwner;
+
+    @Column(nullable = false)
+    private String criticality = "MEDIUM";
+
+    @Column(name = "escalation_policy")
+    private String escalationPolicy;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -155,6 +175,46 @@ public class ConnectedSystem {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Team getOwningTeam() {
+        return owningTeam;
+    }
+
+    public void setOwningTeam(Team owningTeam) {
+        this.owningTeam = owningTeam;
+    }
+
+    public User getPrimaryOwner() {
+        return primaryOwner;
+    }
+
+    public void setPrimaryOwner(User primaryOwner) {
+        this.primaryOwner = primaryOwner;
+    }
+
+    public User getBackupOwner() {
+        return backupOwner;
+    }
+
+    public void setBackupOwner(User backupOwner) {
+        this.backupOwner = backupOwner;
+    }
+
+    public String getCriticality() {
+        return criticality;
+    }
+
+    public void setCriticality(String criticality) {
+        this.criticality = criticality;
+    }
+
+    public String getEscalationPolicy() {
+        return escalationPolicy;
+    }
+
+    public void setEscalationPolicy(String escalationPolicy) {
+        this.escalationPolicy = escalationPolicy;
     }
 
     public Instant getUpdatedAt() {

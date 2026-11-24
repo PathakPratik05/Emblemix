@@ -17,5 +17,15 @@ public record ConnectedSystemRequest(
 
         String environment,
 
-        Boolean enabled
+        Boolean enabled,
+
+        java.util.UUID owningTeamId,
+
+        java.util.UUID primaryOwnerId,
+
+        java.util.UUID backupOwnerId,
+
+        String criticality,
+
+        String escalationPolicy
 ) {}

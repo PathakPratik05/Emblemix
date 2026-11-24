@@ -17,8 +17,12 @@ public record IncidentResponse(
         IncidentSeverity severity,
         IncidentStatus status,
         String fingerprint,
+        UUID assignedTeamId,
+        String assignedTeamName,
         UUID assignedUserId,
         String assignedUserName,
+        int escalationLevel,
+        Instant escalatedAt,
         String resolutionNotes,
         Instant acknowledgedAt,
         Instant resolvedAt,
@@ -30,6 +34,9 @@ public record IncidentResponse(
         if (incident.getAssignedUser() != null) {
             assignedName = incident.getAssignedUser().getFirstName() + " " + incident.getAssignedUser().getLastName();
         }
+        String teamName = incident.getAssignedTeam() != null ? incident.getAssignedTeam().getName() : null;
+        UUID teamId = incident.getAssignedTeam() != null ? incident.getAssignedTeam().getId() : null;
+
         return new IncidentResponse(
                 incident.getId(),
                 incident.getOrganization().getId(),
@@ -40,8 +47,12 @@ public record IncidentResponse(
                 incident.getSeverity(),
                 incident.getStatus(),
                 incident.getFingerprint(),
+                teamId,
+                teamName,
                 incident.getAssignedUser() != null ? incident.getAssignedUser().getId() : null,
                 assignedName,
+                incident.getEscalationLevel(),
+                incident.getEscalatedAt(),
                 incident.getResolutionNotes(),
                 incident.getAcknowledgedAt(),
                 incident.getResolvedAt(),

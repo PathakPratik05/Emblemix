@@ -27,12 +27,13 @@ public class IncidentController {
     }
 
     @GetMapping
-    @Operation(summary = "List all incidents with optional status or severity filters")
+    @Operation(summary = "List all incidents with optional status, severity, or team filters")
     public ResponseEntity<ApiResponse<PagedResponse<IncidentResponse>>> getIncidents(
             @RequestParam(required = false) IncidentStatus status,
             @RequestParam(required = false) IncidentSeverity severity,
+            @RequestParam(required = false) UUID teamId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success(incidentService.getIncidents(status, severity, pageable)));
+        return ResponseEntity.ok(ApiResponse.success(incidentService.getIncidents(status, severity, teamId, pageable)));
     }
 
     @GetMapping("/{id}")
@@ -57,6 +58,27 @@ public class IncidentController {
             @Valid @RequestBody AssignIncidentRequest request) {
         IncidentResponse response = incidentService.assignIncident(id, request.userId());
         return ResponseEntity.ok(ApiResponse.success("Incident assigned successfully", response));
+    }
+
+    @PostMapping("/{id}/assign-team")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('ENGINEER')")
+    @Operation(summary = "Assign an incident to a collaborative engineering team")
+    public ResponseEntity<ApiResponse<IncidentResponse>> assignTeam(
+            @PathVariable UUID id,
+            @Valid @RequestBody AssignTeamRequest request) {
+        IncidentResponse response = incidentService.assignTeam(id, request.teamId());
+        return ResponseEntity.ok(ApiResponse.success("Incident assigned to team successfully", response));
+    }
+
+    @PostMapping("/{id}/escalate")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('ENGINEER')")
+    @Operation(summary = "Escalate an incident to next tier/management")
+    public ResponseEntity<ApiResponse<IncidentResponse>> escalateIncident(
+            @PathVariable UUID id,
+            @RequestBody(required = false) EscalateIncidentRequest request) {
+        String reason = request != null ? request.reason() : null;
+        IncidentResponse response = incidentService.escalateIncident(id, reason);
+        return ResponseEntity.ok(ApiResponse.success("Incident escalated successfully", response));
     }
 
     @PostMapping("/{id}/resolve")

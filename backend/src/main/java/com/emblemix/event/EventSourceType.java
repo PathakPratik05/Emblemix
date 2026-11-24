@@ -4,5 +4,7 @@ public enum EventSourceType {
     WEBSITE,
     SALESFORCE,
     CUSTOM,
-    WEBHOOK
+    WEBHOOK,
+    API,
+    INFRASTRUCTURE
 }

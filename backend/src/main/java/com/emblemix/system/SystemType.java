@@ -3,5 +3,7 @@ package com.emblemix.system;
 public enum SystemType {
     WEBSITE,
     SALESFORCE,
-    WEBHOOK
+    WEBHOOK,
+    API,
+    INFRASTRUCTURE
 }
