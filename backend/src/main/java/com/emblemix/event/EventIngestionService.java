@@ -67,7 +67,7 @@ public class EventIngestionService {
     public Event processNormalizedEvent(Event rawEvent, Integer consecutiveFailures, Long responseTimeMs, Double apiUsagePct) {
         Event event = normalizationService.normalize(rawEvent);
 
-        if (event.getEventType() == EventType.WEBSITE_RECOVERED) {
+        if (event.getEventType() == EventType.WEBSITE_RECOVERED || event.getEventType() == EventType.WEBHOOK_RECOVERED) {
             // Recovery event: auto-resolve incidents for this system and fingerprint
             event.setStatus(EventStatus.PROCESSED);
             Event saved = eventRepository.save(event);

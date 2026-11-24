@@ -8,7 +8,7 @@ Emblemix is built as a high-performance **modular monolith** adhering to clean a
 
 ```mermaid
 graph TD
-    Client["Frontend SPA (React 18 / TypeScript / Vite)"] -->|REST / JWT| Gateway["Spring Boot Backend (Port 8080)"]
+    Client["Frontend App (Next.js 14 App Router / TypeScript)"] -->|REST / JWT| Gateway["Spring Boot Backend (Port 8080)"]
     
     subgraph "Backend Modular Monolith (com.emblemix)"
         Gateway --> Auth["Authentication & Security Filter"]
@@ -19,10 +19,12 @@ graph TD
         Tenant --> RulesEngine["Alert Rule Engine"]
         Tenant --> ReportingMgr["Reporting & Analytics"]
         Tenant --> NotificationMgr["Notification Service"]
+        Tenant --> WebhookMgr["Custom Webhook Ingestion & HMAC"]
         
-        subgraph "Monitoring Engines"
+        subgraph "Monitoring & Ingestion Engines"
             WebMon["Website Monitoring (SSRF Protected)"]
-            SFMon["Salesforce Monitoring (REST / Tooling)"]
+            SFMon["Salesforce Monitoring (REST / Limits)"]
+            HookMon["Custom Webhook Receiver (HMAC-SHA256)"]
         end
         
         subgraph "Common Ingestion Pipeline"
@@ -32,6 +34,7 @@ graph TD
         
         WebMon --> EventIngest
         SFMon --> EventIngest
+        HookMon --> EventIngest
         EventIngest --> EventNorm
         EventNorm --> RulesEngine
         RulesEngine --> IncidentMgr

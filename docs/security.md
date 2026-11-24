@@ -38,3 +38,12 @@ Emblemix is built with security-first architecture across all layers.
 - Restricts monitoring target protocols strictly to `http` and `https`.
 - Resolves all DNS records before connecting and verifies IP ranges against loopback, private networks (RFC 1918), link-local addresses, and cloud metadata targets (`169.254.169.254`).
 - Sanitizes redirect targets with identical SSRF validation rules.
+
+---
+
+## 5. Webhook HMAC-SHA256 & Timing Attack Defense
+
+- Inbound webhooks are authenticated via HMAC-SHA256 using an organization-isolated shared secret.
+- Constant-time message comparison via `MessageDigest.isEqual(...)` prevents timing side-channel attacks.
+- Webhook secrets are stored encrypted at rest with AES-256-GCM.
+- Secrets support on-demand rotation via authenticated management APIs.

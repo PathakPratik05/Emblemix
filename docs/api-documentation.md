@@ -97,3 +97,18 @@ http://localhost:8080/v3/api-docs
 | `GET` | `/reports/incidents` | 14-day daily incident trend data |
 | `GET` | `/reports/uptime` | System uptime percentages and latency stats |
 | `GET` | `/reports/export/incidents.csv` | RFC 4180 CSV export of incidents |
+
+---
+
+## 8. Inbound Custom Webhooks (`/api/v1/webhooks`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/webhooks` | JWT | List all configured webhooks for tenant |
+| `POST` | `/webhooks` | JWT | Create a new webhook (returns plaintext secret once) |
+| `GET` | `/webhooks/{id}` | JWT | Get webhook configuration by ID |
+| `DELETE` | `/webhooks/{id}` | JWT | Delete webhook and its delivery logs |
+| `POST` | `/webhooks/{id}/rotate-secret` | JWT | Rotate webhook signing secret |
+| `GET` | `/webhooks/{id}/deliveries` | JWT | List recent webhook delivery logs |
+| `POST` | `/webhooks/{id}/test` | JWT | Simulate a test webhook delivery |
+| `POST` | `/webhooks/receive/{id}` | HMAC Signature | Public ingestion endpoint with HMAC-SHA256 verification |

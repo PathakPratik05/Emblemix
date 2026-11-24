@@ -48,7 +48,7 @@ services:
       ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       SALESFORCE_CLIENT_ID: ${SALESFORCE_CLIENT_ID:-emblemix-salesforce-client-id}
       SALESFORCE_CLIENT_SECRET: ${SALESFORCE_CLIENT_SECRET:-emblemix-salesforce-client-secret}
-      SALESFORCE_REDIRECT_URI: ${SALESFORCE_REDIRECT_URI:-http://localhost:5173/integrations/salesforce/callback}
+      SALESFORCE_REDIRECT_URI: ${SALESFORCE_REDIRECT_URI:-http://localhost:3000/salesforce}
 
   frontend:
     build:
@@ -59,7 +59,9 @@ services:
     depends_on:
       - backend
     ports:
-      - "5173:80"
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
 
 volumes:
   postgres_data:

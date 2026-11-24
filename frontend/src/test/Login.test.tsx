@@ -1,20 +1,26 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
-import { Login } from '../pages/Login';
+import LoginPage from '../app/(auth)/login/page';
 
-describe('Login Page', () => {
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+  }),
+  usePathname: () => '/login',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+describe('Login Page (Next.js App Router)', () => {
   it('renders login form with inputs and sign in button', () => {
     render(
       <AuthProvider>
-        <BrowserRouter>
-          <Login />
-        </BrowserRouter>
+        <LoginPage />
       </AuthProvider>
     );
 
-    expect(screen.getByText('Sign in to Emblemix')).toBeInTheDocument();
+    expect(screen.getByText('Account Login')).toBeInTheDocument();
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });

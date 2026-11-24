@@ -96,3 +96,26 @@ erDiagram
 - `assigned_user_id` (UUID FK): Assigned engineer.
 - `resolution_notes` (TEXT): Final root-cause and resolution notes.
 - `acknowledged_at`, `resolved_at`: Key SLA timestamps.
+
+---
+
+## 4. Custom Webhooks Tables (`V3__webhook_tables.sql`)
+
+### `webhook_configurations`
+- `id` (UUID PK): Unique webhook configuration identifier.
+- `organization_id` (UUID FK): Tenant partition boundary.
+- `system_id` (UUID FK, nullable): Optional associated connected system.
+- `name` (VARCHAR 255): Human-readable webhook name.
+- `description` (TEXT): Webhook purpose or documentation.
+- `encrypted_secret` (VARCHAR 512): AES-256-GCM encrypted shared HMAC key.
+- `enabled` (BOOLEAN): Master toggle for webhook endpoint.
+
+### `webhook_delivery_logs`
+- `id` (UUID PK): Delivery log entry ID.
+- `webhook_id` (UUID FK): Parent webhook configuration.
+- `organization_id` (UUID FK): Tenant partition boundary.
+- `status` (VARCHAR 50): `SUCCESS`, `INVALID_SIGNATURE`, `INVALID_PAYLOAD`, `PROCESSING_ERROR`, `SYSTEM_DISABLED`.
+- `http_status_code` (INT): HTTP response returned to caller (200, 400, 401, 403).
+- `error_message` (TEXT): Diagnostic detail on failures.
+- `payload_summary` (VARCHAR 1000): Truncated raw payload for auditing.
+- `received_at` (TIMESTAMP WITH TIME ZONE): Ingestion arrival timestamp.

@@ -12,9 +12,9 @@ docker compose up --build
 ```
 
 Services initialized:
-- **Frontend SPA**: `http://localhost:5173`
-- **Backend API**: `http://localhost:8080`
-- **Swagger Documentation**: `http://localhost:8080/swagger-ui.html`
+- **Frontend App (Next.js)**: `http://localhost:3000`
+- **Backend API (Spring Boot)**: `http://localhost:8080`
+- **Swagger OpenAPI Documentation**: `http://localhost:8080/swagger-ui.html`
 - **PostgreSQL 16**: `localhost:5432`
 - **Mailpit Web UI (Local SMTP)**: `http://localhost:8025`
 

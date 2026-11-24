@@ -14,6 +14,8 @@ public class EventNormalizationService {
         // Group recovery events with their failure counterpart
         if (eventType == EventType.WEBSITE_RECOVERED) {
             baseType = EventType.WEBSITE_DOWN.name();
+        } else if (eventType == EventType.WEBHOOK_RECOVERED) {
+            baseType = EventType.WEBHOOK_INCIDENT.name();
         }
         return FingerprintUtil.generateFingerprint(
                 organizationId.toString(),

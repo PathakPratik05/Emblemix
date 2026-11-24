@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.emblemix.common.util.AesEncryptionUtilTest
--------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.026 s -- in com.emblemix.common.util.AesEncryptionUtilTest

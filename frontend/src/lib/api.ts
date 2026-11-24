@@ -38,7 +38,7 @@ export interface ConnectedSystem {
   id: string;
   organizationId: string;
   name: string;
-  systemType: 'WEBSITE' | 'SALESFORCE';
+  systemType: 'WEBSITE' | 'SALESFORCE' | 'WEBHOOK';
   description?: string;
   environment: string;
   status: 'HEALTHY' | 'DEGRADED' | 'DOWN' | 'UNKNOWN';
@@ -206,10 +206,40 @@ export interface UptimeReport {
   failedChecks: number;
 }
 
+export interface WebhookConfiguration {
+  id: string;
+  organizationId: string;
+  systemId?: string;
+  systemName?: string;
+  name: string;
+  description?: string;
+  webhookUrl: string;
+  secret?: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WebhookDeliveryLog {
+  id: string;
+  webhookId: string;
+  status: 'SUCCESS' | 'INVALID_SIGNATURE' | 'INVALID_PAYLOAD' | 'PROCESSING_ERROR' | 'SYSTEM_DISABLED';
+  httpStatusCode: number;
+  errorMessage?: string;
+  payloadSummary?: string;
+  receivedAt: string;
+}
+
+export interface WebhookIngestResult {
+  status: string;
+  message: string;
+  eventId?: string;
+}
+
 const API_BASE = '/api/v1';
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem('emblemix_token');
+  const token = typeof window !== 'undefined' ? localStorage.getItem('emblemix_token') : null;
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -222,10 +252,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   });
 
   if (response.status === 401 && !endpoint.includes('/auth/')) {
-    // Attempt token refresh or logout
-    localStorage.removeItem('emblemix_token');
-    localStorage.removeItem('emblemix_user');
-    window.location.href = '/login';
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('emblemix_token');
+      localStorage.removeItem('emblemix_user');
+      window.location.href = '/login';
+    }
     throw new Error('Session expired, please log in again.');
   }
 
@@ -422,5 +453,29 @@ export const api = {
   organization: {
     getCurrent: () => request<{ id: string; name: string; slug: string }>('/organizations/current'),
     getUsers: () => request<UserProfile[]>('/users'),
+  },
+
+  webhooks: {
+    getAll: () => request<WebhookConfiguration[]>('/webhooks'),
+    getById: (id: string) => request<WebhookConfiguration>(`/webhooks/${id}`),
+    create: (payload: { name: string; description?: string; systemId?: string }) =>
+      request<WebhookConfiguration>('/webhooks', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    rotateSecret: (id: string) =>
+      request<WebhookConfiguration>(`/webhooks/${id}/rotate-secret`, {
+        method: 'POST',
+      }),
+    delete: (id: string) =>
+      request<void>(`/webhooks/${id}`, {
+        method: 'DELETE',
+      }),
+    getDeliveries: (id: string, page = 0, size = 20) =>
+      request<WebhookDeliveryLog[]>(`/webhooks/${id}/deliveries?page=${page}&size=${size}`),
+    test: (id: string) =>
+      request<WebhookIngestResult>(`/webhooks/${id}/test`, {
+        method: 'POST',
+      }),
   },
 };

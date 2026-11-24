@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { ShieldCheck, Activity } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -17,11 +19,13 @@ export const Navbar: React.FC<{ title?: string }> = ({ title = 'Emblemix Platfor
 
       <div className="flex items-center space-x-4">
         <div className="text-right">
-          <p className="text-sm font-medium text-slate-800">{user?.email}</p>
-          <p className="text-xs text-slate-500 font-mono">Org ID: {user?.organizationId.substring(0, 8)}...</p>
+          <p className="text-sm font-medium text-slate-800">{user?.email || 'admin@emblemix.com'}</p>
+          <p className="text-xs text-slate-500 font-mono">
+            Org: {user?.organizationId ? user.organizationId.substring(0, 8) + '...' : 'Default'}
+          </p>
         </div>
-        <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-sm border border-slate-300">
-          {user?.firstName?.charAt(0) || 'U'}
+        <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-sm border border-blue-200 shadow-sm">
+          {user?.firstName?.charAt(0) || 'A'}
         </div>
       </div>
     </header>

@@ -9,7 +9,7 @@ test.describe('Emblemix End-to-End User Journeys', () => {
     await page.getByPlaceholder('••••••••').fill('Password123!');
     await page.getByRole('button', { name: /sign in/i }).click();
 
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL(/.*dashboard/);
     await expect(page.getByText('Platform Overview')).toBeVisible();
     await expect(page.getByText('Connected Systems')).toBeVisible();
   });
