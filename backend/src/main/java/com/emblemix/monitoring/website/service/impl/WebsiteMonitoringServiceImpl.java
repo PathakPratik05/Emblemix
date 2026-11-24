@@ -205,6 +205,7 @@ public class WebsiteMonitoringServiceImpl implements WebsiteMonitoringService {
 
     @Override
     @Scheduled(fixedDelay = 20000)
+    @Transactional
     public void executeScheduledChecks() {
         List<WebsiteConfiguration> configs = configRepository.findAllActiveConfigurations();
         for (WebsiteConfiguration config : configs) {

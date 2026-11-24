@@ -195,6 +195,7 @@ public class SalesforceMonitoringServiceImpl implements SalesforceMonitoringServ
 
     @Override
     @Scheduled(fixedDelay = 60000)
+    @Transactional
     public void executeScheduledMonitoring() {
         List<SalesforceConfiguration> configs = configRepository.findAllActiveConfigurations();
         for (SalesforceConfiguration config : configs) {

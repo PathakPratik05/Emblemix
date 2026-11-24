@@ -17,6 +17,6 @@ public interface WebsiteConfigurationRepository extends JpaRepository<WebsiteCon
     Optional<WebsiteConfiguration> findBySystemId(UUID systemId);
     Page<WebsiteConfiguration> findByOrganizationId(UUID organizationId, Pageable pageable);
 
-    @Query("SELECT w FROM WebsiteConfiguration w WHERE w.system.enabled = true")
+    @Query("SELECT w FROM WebsiteConfiguration w JOIN FETCH w.system JOIN FETCH w.organization WHERE w.system.enabled = true")
     List<WebsiteConfiguration> findAllActiveConfigurations();
 }

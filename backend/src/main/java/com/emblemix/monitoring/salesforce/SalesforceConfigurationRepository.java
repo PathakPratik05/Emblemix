@@ -15,6 +15,6 @@ public interface SalesforceConfigurationRepository extends JpaRepository<Salesfo
     Optional<SalesforceConfiguration> findBySystemId(UUID systemId);
     List<SalesforceConfiguration> findByOrganizationId(UUID organizationId);
 
-    @Query("SELECT s FROM SalesforceConfiguration s WHERE s.system.enabled = true")
+    @Query("SELECT s FROM SalesforceConfiguration s JOIN FETCH s.system JOIN FETCH s.organization WHERE s.system.enabled = true")
     List<SalesforceConfiguration> findAllActiveConfigurations();
 }
