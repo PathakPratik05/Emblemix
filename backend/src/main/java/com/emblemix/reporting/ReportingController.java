@@ -4,6 +4,7 @@ import com.emblemix.common.response.ApiResponse;
 import com.emblemix.reporting.dto.DashboardOverviewDto;
 import com.emblemix.reporting.dto.IncidentTrendDto;
 import com.emblemix.reporting.dto.UptimeReportDto;
+import com.emblemix.reporting.service.ReportingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpHeaders;

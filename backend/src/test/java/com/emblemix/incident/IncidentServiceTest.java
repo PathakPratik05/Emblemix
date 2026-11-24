@@ -4,7 +4,9 @@ import com.emblemix.event.Event;
 import com.emblemix.event.EventSeverity;
 import com.emblemix.event.EventSourceType;
 import com.emblemix.event.EventType;
-import com.emblemix.notification.NotificationService;
+import com.emblemix.incident.service.IncidentService;
+import com.emblemix.incident.service.impl.IncidentServiceImpl;
+import com.emblemix.notification.service.NotificationService;
 import com.emblemix.organization.Organization;
 import com.emblemix.system.ConnectedSystem;
 import com.emblemix.system.SystemType;
@@ -56,7 +58,7 @@ class IncidentServiceTest {
 
     @BeforeEach
     void setUp() {
-        incidentService = new IncidentService(
+        incidentService = new IncidentServiceImpl(
                 incidentRepository,
                 incidentEventRepository,
                 historyRepository,

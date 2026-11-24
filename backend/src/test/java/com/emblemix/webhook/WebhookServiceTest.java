@@ -3,10 +3,10 @@ package com.emblemix.webhook;
 import com.emblemix.common.exception.UnauthorizedException;
 import com.emblemix.common.util.AesEncryptionUtil;
 import com.emblemix.event.Event;
-import com.emblemix.event.EventIngestionService;
 import com.emblemix.event.EventSeverity;
 import com.emblemix.event.EventSourceType;
 import com.emblemix.event.EventType;
+import com.emblemix.event.service.EventIngestionService;
 import com.emblemix.organization.Organization;
 import com.emblemix.organization.OrganizationRepository;
 import com.emblemix.system.ConnectedSystem;
@@ -16,6 +16,8 @@ import com.emblemix.system.SystemType;
 import com.emblemix.webhook.dto.CreateWebhookRequest;
 import com.emblemix.webhook.dto.WebhookIngestResult;
 import com.emblemix.webhook.dto.WebhookResponse;
+import com.emblemix.webhook.service.WebhookService;
+import com.emblemix.webhook.service.impl.WebhookServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -63,7 +65,7 @@ class WebhookServiceTest {
     void setUp() {
         aesEncryptionUtil = new AesEncryptionUtil("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
         objectMapper = new ObjectMapper();
-        webhookService = new WebhookService(
+        webhookService = new WebhookServiceImpl(
                 webhookRepository,
                 deliveryLogRepository,
                 organizationRepository,

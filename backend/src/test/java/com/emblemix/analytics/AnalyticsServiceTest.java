@@ -3,6 +3,8 @@ package com.emblemix.analytics;
 import com.emblemix.analytics.dto.KpiSummaryResponse;
 import com.emblemix.analytics.dto.PowerBiEmbedConfigResponse;
 import com.emblemix.analytics.dto.TeamPerformanceResponse;
+import com.emblemix.analytics.service.AnalyticsService;
+import com.emblemix.analytics.service.impl.AnalyticsServiceImpl;
 import com.emblemix.common.security.TenantContext;
 import com.emblemix.incident.Incident;
 import com.emblemix.incident.IncidentRepository;
@@ -51,7 +53,7 @@ class AnalyticsServiceTest {
 
     @BeforeEach
     void setUp() {
-        analyticsService = new AnalyticsService(systemRepository, incidentRepository, teamRepository);
+        analyticsService = new AnalyticsServiceImpl(systemRepository, incidentRepository, teamRepository);
         orgId = UUID.randomUUID();
         TenantContext.setCurrentTenant(orgId);
         org = new Organization(orgId, "Acme Corp", "acme-corp");

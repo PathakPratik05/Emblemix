@@ -3,6 +3,7 @@ package com.emblemix.user;
 import com.emblemix.common.response.ApiResponse;
 import com.emblemix.user.dto.UpdateProfileRequest;
 import com.emblemix.user.dto.UserProfileResponse;
+import com.emblemix.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

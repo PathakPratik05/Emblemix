@@ -3,6 +3,7 @@ package com.emblemix.incident;
 import com.emblemix.common.response.ApiResponse;
 import com.emblemix.common.response.PagedResponse;
 import com.emblemix.incident.dto.*;
+import com.emblemix.incident.service.IncidentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

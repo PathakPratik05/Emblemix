@@ -1,6 +1,8 @@
 package com.emblemix.auth;
 
 import com.emblemix.auth.dto.*;
+import com.emblemix.auth.service.AuthService;
+import com.emblemix.auth.service.impl.AuthServiceImpl;
 import com.emblemix.common.exception.BadRequestException;
 import com.emblemix.common.exception.UnauthorizedException;
 import com.emblemix.common.security.JwtTokenProvider;
@@ -58,7 +60,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(
+        authService = new AuthServiceImpl(
                 authenticationManager,
                 userRepository,
                 organizationRepository,

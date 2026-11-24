@@ -2,6 +2,7 @@ package com.emblemix.alert;
 
 import com.emblemix.alert.dto.AlertRuleRequest;
 import com.emblemix.alert.dto.AlertRuleResponse;
+import com.emblemix.alert.service.AlertRuleService;
 import com.emblemix.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

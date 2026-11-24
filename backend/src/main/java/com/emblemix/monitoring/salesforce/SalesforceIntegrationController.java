@@ -2,6 +2,8 @@ package com.emblemix.monitoring.salesforce;
 
 import com.emblemix.common.response.ApiResponse;
 import com.emblemix.monitoring.salesforce.dto.*;
+import com.emblemix.monitoring.salesforce.service.SalesforceMonitoringService;
+import com.emblemix.monitoring.salesforce.service.SalesforceOAuthService;
 import com.emblemix.system.ConnectedSystem;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,5 +1,6 @@
 package com.emblemix.audit;
 
+import com.emblemix.audit.service.AuditService;
 import com.emblemix.common.response.ApiResponse;
 import com.emblemix.common.response.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;

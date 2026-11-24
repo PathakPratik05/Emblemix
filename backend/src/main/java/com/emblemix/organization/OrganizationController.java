@@ -3,6 +3,7 @@ package com.emblemix.organization;
 import com.emblemix.common.response.ApiResponse;
 import com.emblemix.organization.dto.OrganizationResponse;
 import com.emblemix.organization.dto.UpdateOrganizationRequest;
+import com.emblemix.organization.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

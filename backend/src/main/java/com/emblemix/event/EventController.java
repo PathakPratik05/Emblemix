@@ -6,6 +6,7 @@ import com.emblemix.common.response.PagedResponse;
 import com.emblemix.common.security.SecurityUtils;
 import com.emblemix.event.dto.EventIngestRequest;
 import com.emblemix.event.dto.EventResponse;
+import com.emblemix.event.service.EventIngestionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

@@ -1,6 +1,7 @@
 package com.emblemix.auth;
 
 import com.emblemix.auth.dto.*;
+import com.emblemix.auth.service.AuthService;
 import com.emblemix.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

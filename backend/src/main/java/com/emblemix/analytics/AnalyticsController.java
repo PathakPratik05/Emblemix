@@ -1,6 +1,7 @@
 package com.emblemix.analytics;
 
 import com.emblemix.analytics.dto.*;
+import com.emblemix.analytics.service.AnalyticsService;
 import com.emblemix.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

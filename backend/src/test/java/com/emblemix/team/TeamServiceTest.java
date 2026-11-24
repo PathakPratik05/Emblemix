@@ -1,12 +1,14 @@
 package com.emblemix.team;
 
-import com.emblemix.audit.AuditService;
+import com.emblemix.audit.service.AuditService;
 import com.emblemix.common.exception.BadRequestException;
 import com.emblemix.common.exception.ResourceNotFoundException;
 import com.emblemix.common.security.TenantContext;
 import com.emblemix.organization.Organization;
 import com.emblemix.organization.OrganizationRepository;
 import com.emblemix.team.dto.*;
+import com.emblemix.team.service.TeamService;
+import com.emblemix.team.service.impl.TeamServiceImpl;
 import com.emblemix.user.Role;
 import com.emblemix.user.User;
 import com.emblemix.user.UserRepository;
@@ -52,7 +54,7 @@ class TeamServiceTest {
 
     @BeforeEach
     void setUp() {
-        teamService = new TeamService(
+        teamService = new TeamServiceImpl(
                 teamRepository,
                 teamMemberRepository,
                 userRepository,

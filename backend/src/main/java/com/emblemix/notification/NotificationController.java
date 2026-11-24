@@ -5,6 +5,7 @@ import com.emblemix.common.response.PagedResponse;
 import com.emblemix.notification.dto.NotificationChannelRequest;
 import com.emblemix.notification.dto.NotificationChannelResponse;
 import com.emblemix.notification.dto.NotificationLogResponse;
+import com.emblemix.notification.service.NotificationChannelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
