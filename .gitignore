@@ -1,0 +1,14 @@
+# Build and Dependency Artifacts
+**/target/
+**/node_modules/
+**/dist/
+
+# Logs and Environment
+*.log
+.env
+.DS_Store
+
+# IDE and Editor Directories
+.idea/
+.vscode/
+*.iml
